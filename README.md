@@ -1,4 +1,4 @@
-Zend Framework 2 - Kapitchi Poll module
+Zend Framework 2 - Kapitchi File Manager module
 ==============================================
 
 __Version:__ 0.1-dev  
