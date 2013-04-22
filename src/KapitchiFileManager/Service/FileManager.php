@@ -20,39 +20,11 @@ class FileManager extends AbstractService
     protected $volumeManager;
     protected $volumeResolver;
 
-    protected function attachDefaultListeners()
+    public function __destruct()
     {
-        parent::attachDefaultListeners();
-        $em = $this->getEventManager();
-        $em->attach('copy', function($e) {
-            //we do not support different volume copying
-            $volume = $e->getParam('fromVolume');
-            $volume->copy($e->getParam('fromVolumePath'), $e->getParam('toVolumePath'));
-        });
-        
-        $em->attach('rename', function($e) {
-            //we do not support different volume copying
-            $volume = $e->getParam('fromVolume');
-            $volume->rename($e->getParam('fromVolumePath'), $e->getParam('toVolumePath'));
-        });
-        
-        $em->attach('remove', function($e) {
-            //we do not support different volume copying
-            $volume = $e->getParam('volume');
-            $volume->remove($e->getParam('volumePath'));
-        });
-        
-        $em->attach('store', function($e) {
-            //we do not support different volume copying
-            $volume = $e->getParam('volume');
-            $volume->store($e->getParam('volumePath'), $e->getParam('content'));
-        });
-//        $em->attach('ls', function($e) {
-//            $volume = $e->getParam('volume');
-//            return $volume->ls($e->getParam('volumePath'), $e->getParam('sortOrder'));
-//        });
+        $this->unmountAll();
     }
-    
+
     public function copy($fromPath, $toPath)
     {
         $fromVolumeData = $this->getVolumeResolver()->parsePath($fromPath);
@@ -63,9 +35,10 @@ class FileManager extends AbstractService
         }
         
         //volumes are same
-        $volume = $this->getVolumeManager()->get($fromVolumeData['volumeHandle']);
+        $volume = $this->getVolume($fromVolumeData['volumeHandle']);
+        $volume->copy($fromVolumeData['volumePath'], $toVolumeData['volumePath']);
         
-        $this->triggerEvent('copy', array(
+        $this->triggerEvent('copy.post', array(
             'fromVolume' => $volume,
             'fromVolumeHandle' => $fromVolumeData['volumeHandle'],
             'fromVolumePath' => $fromVolumeData['volumePath'],
@@ -96,16 +69,17 @@ class FileManager extends AbstractService
     public function read($path)
     {
         $volumeData = $this->getVolumeResolver()->parsePath($path);
-        $volume = $this->getVolumeManager()->get($volumeData['volumeHandle']);
+        $volume = $this->getVolume($volumeData['volumeHandle']);
         return $volume->read($volumeData['volumePath']);
     }
 
     public function remove($path)
     {
         $volumeData = $this->getVolumeResolver()->parsePath($path);
-        $volume = $this->getVolumeManager()->get($volumeData['volumeHandle']);
+        $volume = $this->getVolume($volumeData['volumeHandle']);
+        $volume->remove($volumeData['volumePath']);
         
-        $res = $this->triggerEvent('remove', array(
+        $res = $this->triggerEvent('remove.pos', array(
             'volume' => $volume,
             'volumeHandle' => $volumeData['volumeHandle'],
             'volumePath' => $volumeData['volumePath'],
@@ -122,7 +96,8 @@ class FileManager extends AbstractService
         }
         
         //volumes are same
-        $volume = $this->getVolumeManager()->get($fromVolumeData['volumeHandle']);
+        $volume = $this->getVolume($fromVolumeData['volumeHandle']);
+        $volume->rename($fromVolumeData['volumePath'], $toVolumeData['volumePath']);
         
         $this->triggerEvent('rename', array(
             'fromVolume' => $volume,
@@ -137,9 +112,11 @@ class FileManager extends AbstractService
     public function store($path, $content)
     {
         $volumeData = $this->getVolumeResolver()->parsePath($path);
-        $volume = $this->getVolumeManager()->get($volumeData['volumeHandle']);
+        $volume = $this->getVolume($volumeData['volumeHandle']);
         
-        $res = $this->triggerEvent('store', array(
+        $volume->store($volumeData['volumePath']);
+        
+        $res = $this->triggerEvent('store.post', array(
             'volume' => $volume,
             'volumeHandle' => $volumeData['volumeHandle'],
             'volumePath' => $volumeData['volumePath'],
@@ -147,13 +124,33 @@ class FileManager extends AbstractService
         ));
     }
     
+    public function storeFile($path, $filePath)
+    {
+        $volumeData = $this->getVolumeResolver()->parsePath($path);
+        $volume = $this->getVolume($volumeData['volumeHandle']);
+        
+        $volume->storeFile($volumeData['volumePath'], $filePath);
+        
+        $res = $this->triggerEvent('storeFile.post', array(
+            'volume' => $volume,
+            'volumeHandle' => $volumeData['volumeHandle'],
+            'volumePath' => $volumeData['volumePath'],
+            'filePath' => $filePath,
+        ));
+    }
+    
     public function getFileMeta($path) {
         $volumeData = $this->getVolumeResolver()->parsePath($path);
-        $volume = $this->getVolumeManager()->get($volumeData['volumeHandle']);
+        $volume = $this->getVolume($volumeData['volumeHandle']);
         
         //TODO
     }
 
+    protected function getVolume($handle)
+    {
+        return $this->getVolumeManager()->get($handle);
+    }
+    
     /**
      * 
      * @return \KapitchiFileManager\Volume\Manager

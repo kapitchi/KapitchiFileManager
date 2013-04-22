@@ -17,7 +17,9 @@ class VolumePathPrefixResolver implements VolumeResolverInterface
     public function parsePath($path)
     {
         //trim first forward slash
-        $path = substr($path, 1);
+        if(strpos($path, '/') === 0) {
+            $path = substr($path, 1);
+        }
         
         $paths = explode('/', $path);
         $volumeHandle = array_shift($paths);

@@ -41,7 +41,10 @@ class LocalFilesystemVolume extends AbstractVolume implements StreamVolumeInterf
     
     public function mount(Manager $manager)
     {
-        //do nothing for local file system
+        $path = $this->getOptions()->getPathRoot();
+        if(!is_dir($path)) {
+            mkdir($path, 0777, true);
+        }
     }
     
     public function unmount(Manager $manager)
@@ -74,7 +77,11 @@ class LocalFilesystemVolume extends AbstractVolume implements StreamVolumeInterf
 
     public function read($path)
     {
-        return file_get_contents($this->getAbsPath($path));
+        $absPath = $this->getAbsPath($path);
+        \Zend\Stdlib\ErrorHandler::start(E_WARNING | E_NOTICE);
+        $cont = file_get_contents($absPath);
+        \Zend\Stdlib\ErrorHandler::stop(true);
+        return $cont;
     }
     
     public function remove($path)
@@ -92,6 +99,11 @@ class LocalFilesystemVolume extends AbstractVolume implements StreamVolumeInterf
     {
         $absPath = $this->getAbsPath($path);
         file_put_contents($absPath, $data);
+    }
+    
+    public function storeFile($path, $filePath)
+    {
+        copy($filePath, $this->getAbsPath($path));
     }
 
     public function openStream($path)

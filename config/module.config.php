@@ -7,7 +7,7 @@ return array(
     ),
     'view_manager' => array(
         'template_path_stack' => array(
-            'file-manager' => __DIR__ . '/../view',
+            //'file-manager' => __DIR__ . '/../view',
         ),
     ),
     'router' => array(

@@ -24,6 +24,7 @@ interface VolumeInterface
     public function rename($fromPath, $toPath);
     public function remove($path);
     public function store($path, $content);
+    public function storeFile($path, $filePath);
     public function read($path);
     
     /**
